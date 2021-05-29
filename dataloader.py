@@ -1,9 +1,7 @@
 import tensorflow as tf
-from tensorflow.keras.utils import Sequence, Progbar
 import pydicom
 import tensorflow_io as tf_io   # to read dicom files from tensor strings
 import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
 import config
 import os

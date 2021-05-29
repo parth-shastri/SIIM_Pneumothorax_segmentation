@@ -2,9 +2,6 @@ from tensorflow.keras import layers, Model, Input
 from tensorflow.keras.utils import Progbar
 from tensorflow.keras.optimizers import Adam
 import tensorflow as tf
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn
 import config
 from dataloader import train_data, val_data
 from utils import dice_coef
