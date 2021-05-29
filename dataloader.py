@@ -111,16 +111,26 @@ def val_pre(image_path, mask):  # for validation images
     return tf.cast(image, tf.float32), tf.cast(mask / 255.0, tf.float32)
 
 
+def set_shapes(img, label, img_shape=(256, 256, 1)):  # map this to the tf.py_func mapped dataset to restored shape
+    img.set_shape(img_shape)
+    label.set_shape(img_shape)
+    return img, label
+
+
 train_tensor = tf.data.Dataset.from_tensor_slices((train_img_path, train_mask))
+
 train_data = train_tensor.map(
     lambda x, y: tf.py_function(preprocess, [x, y], [tf.float32, tf.float32]),
     num_parallel_calls=tf.data.experimental.AUTOTUNE
+).map(
+    set_shapes, num_parallel_calls=tf.data.experimental.AUTOTUNE
 ).take(int(0.9 * 2000)).shuffle(1800).batch(config.BATCH_SIZE)
 
 val_data = train_tensor.map(
     lambda x, y: tf.py_function(val_pre, [x, y], [tf.float32, tf.float32]),
     num_parallel_calls=tf.data.experimental.AUTOTUNE
-).skip(int(0.9 * 2000)).shuffle(200).batch(config.BATCH_SIZE)
+).map(set_shapes, num_parallel_calls=tf.data.experimental.AUTOTUNE
+      ).skip(int(0.9 * 2000)).shuffle(200).batch(config.BATCH_SIZE)
 
 if __name__ == "__main__":
 
