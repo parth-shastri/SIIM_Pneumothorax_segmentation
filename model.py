@@ -44,7 +44,7 @@ class ConvBlock(layers.Layer):
 
 
 class Unet(Model):
-    def __init__(self, name, out_channels=1, filters=(64, 128, 256, 512)):
+    def __init__(self, name, out_channels=2, filters=(64, 128, 256, 512)):
         super(Unet, self).__init__(name=name)
         self.filter_list = filters
         self.out_channels = out_channels
@@ -64,7 +64,7 @@ class Unet(Model):
         self.conv_tr_2 = layers.Conv2DTranspose(self.filter_list[2], 2, 2)
         self.conv_tr_3 = layers.Conv2DTranspose(self.filter_list[1], 2, 2)
         self.conv_tr_4 = layers.Conv2DTranspose(self.filter_list[0], 2, 2)
-        self.out = layers.Conv2D(self.out_channels, kernel_size=1, activation="sigmoid")
+        self.out = layers.Conv2D(self.out_channels, kernel_size=1)
 
     def call(self, inputs, training=None, mask=None):
 
@@ -129,10 +129,10 @@ if __name__ == "__main__":
 
     def get_loss(loss_type=config.LOSS_TYPE):
         if loss_type == "focal_loss":
-            loss = FocalLoss()
+            loss = FocalLoss(from_logits=True)
             return loss
-        if loss_type == "binary_crossentropy":
-            loss = keras.losses.BinaryCrossentropy()
+        if loss_type == "categorical_crossentropy":
+            loss = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
             return loss
         else:
             raise AttributeError
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     model.compile(optimizer=Adam(learning_rate=0.001), loss=loss_obj, metrics=[dice_coef])
     print(model.model().summary())
 
-    # Training the model
+    # Training the model :
 
     tensorboard = tf.keras.callbacks.TensorBoard(log_dir='logs/2', histogram_freq=1)
     ckpt = tf.keras.callbacks.ModelCheckpoint(config.CKPT_DIR)
@@ -150,8 +150,9 @@ if __name__ == "__main__":
                      validation_data=val_data,
                      callbacks=[tensorboard, ckpt])
 
-    model.save("my_model")
+    model.save("model_categorical")
 
+    # model.load_weights(config.CKPT_DIR)
 
 
 

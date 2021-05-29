@@ -134,10 +134,16 @@ if __name__ == "__main__":
 
     '''Test Code'''
 
-    plt.imshow(train_mask[6].numpy().reshape(config.IMG_SIZE, -1))
-    plt.show()
-    for images, masks in train_data.take(1):
-        print(tf.reduce_max(masks), tf.reduce_max(images))
+    # plt.imshow(train_mask[6].numpy().reshape(config.IMG_SIZE, -1))
+    # plt.show()
+    for n, (images, masks) in enumerate(train_data.take(5)):
+        for i, mask in enumerate(masks):
+            if mask.numpy().any() == 1.:
+                plt.imshow(mask)
+                plt.show()
+                print("batch:", n, '\t', "the index : ", i)
+            else:
+                continue
 
 
 

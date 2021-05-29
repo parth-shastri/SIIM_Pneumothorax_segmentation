@@ -21,12 +21,21 @@ class FocalLoss(keras.losses.Loss):
         self.from_logits = from_logits
 
     def call(self, y_true, y_pred):
-        bce = keras.losses.BinaryCrossentropy(from_logits=self.from_logits,
-                                              reduction=tf.keras.losses.Reduction.NONE)(y_true, y_pred)
+        bce = keras.losses.SparseCategoricalCrossentropy(from_logits=self.from_logits,
+                                                         reduction=tf.keras.losses.Reduction.NONE)(y_true, y_pred)
         a_t = tf.where(y_true == 1, self.alpha, 1 - self.alpha)
         p_t = tf.exp(-tf.expand_dims(bce, axis=-1))
         focal_loss = a_t * ((1 - p_t) ** self.gamma) * tf.expand_dims(bce, axis=-1)
         return focal_loss
+
+    def get_config(self):
+        config = super(FocalLoss, self).from_config()
+        config.update({"alpha": self.alpha, "gamma": self.gamma})
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 
 if __name__ == "__main__":

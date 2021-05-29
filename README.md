@@ -13,4 +13,6 @@ Paper : https://arxiv.org/pdf/1505.04597
 
 
 TODO : deal with imbalanced dataset
+Done - Implemented focal loss to mitigate the data imbalance.
+
 
