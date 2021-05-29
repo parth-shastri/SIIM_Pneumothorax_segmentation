@@ -133,6 +133,7 @@ val_data = train_tensor.map(
 if __name__ == "__main__":
 
     '''Test Code'''
+
     plt.imshow(train_mask[6].numpy().reshape(config.IMG_SIZE, -1))
     plt.show()
     for images, masks in train_data.take(1):

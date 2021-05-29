@@ -1,10 +1,11 @@
+import keras.losses
 from tensorflow.keras import layers, Model, Input
 from tensorflow.keras.utils import Progbar
 from tensorflow.keras.optimizers import Adam
 import tensorflow as tf
 import config
 from dataloader import train_data, val_data
-from utils import dice_coef
+from utils import dice_coef, FocalLoss
 
 
 class ConvBlock(layers.Layer):
@@ -126,12 +127,23 @@ if __name__ == "__main__":
     model = Unet(name="unet", out_channels=config.OUT_CHANNELS, filters=config.FILTERS)
     custom_objects = {"Unet": Unet, "ConvBlock": ConvBlock}
 
-    model.compile(optimizer=Adam(lr=0.001), loss="binary_crossentropy", metrics=[dice_coef])
+    def get_loss(loss_type=config.LOSS_TYPE):
+        if loss_type == "focal_loss":
+            loss = FocalLoss()
+            return loss
+        if loss_type == "binary_crossentropy":
+            loss = keras.losses.BinaryCrossentropy()
+            return loss
+        else:
+            raise AttributeError
+
+    loss_obj = get_loss(loss_type=config.LOSS_TYPE)
+    model.compile(optimizer=Adam(learning_rate=0.001), loss=loss_obj, metrics=[dice_coef])
     print(model.model().summary())
 
     # Training the model
 
-    tensorboard = tf.keras.callbacks.TensorBoard(log_dir='logs/1', histogram_freq=1)
+    tensorboard = tf.keras.callbacks.TensorBoard(log_dir='logs/2', histogram_freq=1)
     ckpt = tf.keras.callbacks.ModelCheckpoint(config.CKPT_DIR)
     hist = model.fit(train_data,
                      epochs=10,
