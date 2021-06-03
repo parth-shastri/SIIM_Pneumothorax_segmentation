@@ -1,16 +1,66 @@
 import tensorflow as tf
 from tensorflow import keras
-
 import config
+from tensorflow.keras import backend as K
+import numpy as np
+
+
+def get_iou_vector(A, B):
+    # Numpy version
+    batch_size = A.shape[0]
+    metric = 0.0
+    for batch in range(batch_size):
+        t, p = A[batch], B[batch]
+        true = np.sum(t)
+        pred = np.sum(p)
+
+        # deal with empty mask first
+        if true == 0:
+            metric += (pred == 0)
+            continue
+
+        # non empty mask case.  Union is never empty
+        # hence it is safe to divide by its number of pixels
+        intersection = np.sum(t * p)
+        union = true + pred - intersection
+        iou = intersection / union
+
+        # iou metrric is a stepwise approximation of the real iou over 0.5
+        iou = np.floor(max(0, (iou - 0.45) * 20)) / 10
+
+        metric += iou
+
+    # teake the average over all images in batch
+    metric /= batch_size
+    return metric
+
+
+def my_iou_metric(label, pred):
+    # Tensorflow version
+    return tf.py_function(get_iou_vector, [label, tf.nn.sigmoid(K.cast(pred > 0.1, tf.float32))], tf.float64)
+
+
+def dice_loss(y_true, y_pred):
+    smooth = 1.
+    y_true_f = tf.cast(K.flatten(y_true), tf.float32)
+    y_pred_f = K.flatten(y_pred)
+    intersection = y_true_f * y_pred_f
+    score = (2. * K.sum(intersection) + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
+    return 1. - score
 
 
 def dice_coef(y_true, y_pred):
 
-    intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2, 3])
-    union = tf.reduce_sum(y_true, axis=[1, 2, 3]) + tf.reduce_sum(y_true, axis=[1, 2, 3])
+    y_true_f = tf.cast(K.flatten(y_true), tf.float32)
+    y_pred_f = tf.cast(K.sigmoid(K.flatten(y_pred)), tf.float32)
+    intersection = tf.reduce_sum(y_true_f * y_pred_f, axis=-1)
+    union = tf.reduce_sum(y_true_f + y_pred_f, axis=-1)
 
-    metric = (2*intersection) / (union + 1e-6)
-    return tf.reduce_mean(metric)
+    if K.sum(y_true_f)==0 and K.sum(y_pred_f)==0:
+        return 1.0
+
+    score = (2*intersection) / (union + 1e-6)
+    return tf.reduce_mean(score)
 
 
 class FocalLoss(keras.losses.Loss):
@@ -21,8 +71,8 @@ class FocalLoss(keras.losses.Loss):
         self.from_logits = from_logits
 
     def call(self, y_true, y_pred):
-        bce = keras.losses.SparseCategoricalCrossentropy(from_logits=self.from_logits,
-                                                         reduction=tf.keras.losses.Reduction.NONE)(y_true, y_pred)
+        bce = keras.losses.BinaryCrossentropy(from_logits=self.from_logits,
+                                              reduction=tf.keras.losses.Reduction.NONE)(y_true, y_pred)
         a_t = tf.where(y_true == 1, self.alpha, 1 - self.alpha)
         p_t = tf.exp(-tf.expand_dims(bce, axis=-1))
         focal_loss = a_t * ((1 - p_t) ** self.gamma) * tf.expand_dims(bce, axis=-1)
@@ -36,6 +86,11 @@ class FocalLoss(keras.losses.Loss):
     @classmethod
     def from_config(cls, config):
         return cls(**config)
+
+
+def combo_loss(y_true, y_pred):
+    loss = tf.keras.losses.BinaryCrossentropy()(y_true, y_pred) + dice_loss(y_true, y_pred)
+    return loss
 
 
 if __name__ == "__main__":
