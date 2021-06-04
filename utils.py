@@ -37,13 +37,13 @@ def get_iou_vector(A, B):
 
 def my_iou_metric(label, pred):
     # Tensorflow version
-    return tf.py_function(get_iou_vector, [label, tf.nn.sigmoid(K.cast(pred > 0.1, tf.float32))], tf.float64)
+    return tf.py_function(get_iou_vector, [label, (K.cast(K.sigmoid(pred) > 0.1, tf.float32))], tf.float64)
 
 
 def dice_loss(y_true, y_pred):
     smooth = 1.
     y_true_f = tf.cast(K.flatten(y_true), tf.float32)
-    y_pred_f = K.flatten(y_pred)
+    y_pred_f = K.flatten(K.sigmoid(y_pred))
     intersection = y_true_f * y_pred_f
     score = (2. * K.sum(intersection) + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
     return 1. - score
@@ -54,9 +54,9 @@ def dice_coef(y_true, y_pred):
     y_true_f = tf.cast(K.flatten(y_true), tf.float32)
     y_pred_f = tf.cast(K.sigmoid(K.flatten(y_pred)), tf.float32)
     intersection = tf.reduce_sum(y_true_f * y_pred_f, axis=-1)
-    union = tf.reduce_sum(y_true_f + y_pred_f, axis=-1)
+    union = K.sum(y_true_f) + K.sum(y_pred_f)
 
-    if K.sum(y_true_f)==0 and K.sum(y_pred_f)==0:
+    if K.sum(y_true_f) == 0 and K.sum(y_pred_f) == 0:
         return 1.0
 
     score = (2*intersection) / (union + 1e-6)
@@ -70,12 +70,14 @@ class FocalLoss(keras.losses.Loss):
         self.gamma = gamma
         self.from_logits = from_logits
 
-    def call(self, y_true, y_pred):
+    def __call__(self, y_true, y_pred):
         bce = keras.losses.BinaryCrossentropy(from_logits=self.from_logits,
-                                              reduction=tf.keras.losses.Reduction.NONE)(y_true, y_pred)
-        a_t = tf.where(y_true == 1, self.alpha, 1 - self.alpha)
+                                              reduction=tf.keras.losses.Reduction.NONE)(y_true,
+                                                                                        y_pred,
+                                                                                        sample_weight=[self.alpha])
+        # a_t = tf.where(y_true == 1, self.alpha, 1 - self.alpha)
         p_t = tf.exp(-tf.expand_dims(bce, axis=-1))
-        focal_loss = a_t * ((1 - p_t) ** self.gamma) * tf.expand_dims(bce, axis=-1)
+        focal_loss = ((1 - p_t) ** self.gamma) * tf.expand_dims(bce, axis=-1)
         return focal_loss
 
     def get_config(self):
@@ -89,7 +91,8 @@ class FocalLoss(keras.losses.Loss):
 
 
 def combo_loss(y_true, y_pred):
-    loss = tf.keras.losses.BinaryCrossentropy()(y_true, y_pred) + dice_loss(y_true, y_pred)
+    loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)(y_true, y_pred) + dice_loss(y_true, y_pred)
+           # 4 * FocalLoss(from_logits=True, alpha=4.)(y_true, y_pred)
     return loss
 
 
