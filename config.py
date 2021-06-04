@@ -2,7 +2,7 @@
 TRAIN_IMG_DIR = r"C:\Users\shast\datasets\SIIM-segmentation Images\input\train\images\64\dicom"
 TRAIN_CSV = r"C:\Users\shast\datasets\SIIM-segmentation Images\input\train\train-rle.csv"
 TRAIN_MASK_DIR = r"C:\Users\shast\datasets\SIIM-segmentation Images\input\train\images\64\mask"
-TEST_DIR = r"C:\Users\shast\datasets\SIIM-segmentation Images\input\test\images"
+TEST_DIR = r"C:\Users\shast\datasets\SIIM-segmentation Images\input\test\images\64\images"
 
 CKPT_DIR = "model-checkpoint/train-combo-bce-dice(1)"
 LOG_DIR = "logs/5-combo-bce-dice(2)"

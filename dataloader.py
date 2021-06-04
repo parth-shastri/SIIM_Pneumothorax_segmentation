@@ -35,6 +35,8 @@ val_df = train_rle[train_rle["kfold"] == 0]
 
 train_names = sorted(glob.glob(os.path.join(config.TRAIN_IMG_DIR, "*.png")))
 train_mask_names = sorted(glob.glob(os.path.join(config.TRAIN_MASK_DIR,  "*.png")))
+test_names = sorted(glob.glob(os.path.join(config.TEST_DIR, "*png")))
+
 print(train_mask_names[0], train_names[0])
 print(f"Found {len(train_names)} images in the train directory.")
 

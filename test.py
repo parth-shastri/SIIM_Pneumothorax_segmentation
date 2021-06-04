@@ -18,20 +18,6 @@ model = load_model(config.MODEL_DIR,
                                    "my_iou_metric": my_iou_metric}
                    )
 
-# test_paths = glob.glob(os.path.join(config.TEST_IMG_DIR, "*/*/*.dcm"))
-# train_paths = sorted(glob.glob(os.path.join(config.TRAIN_IMG_DIR, "*/*/*.dcm")))
-#
-# image_bytes = tf.io.read_file(test_paths[0])
-# image = tfio.image.decode_dicom_image(image_bytes, dtype=tf.uint16)
-# image = tf.keras.preprocessing.image.img_to_array(tf.squeeze(image))
-# image = tf.cast(image, tf.float32)
-# transform = a.Compose([
-#     a.Normalize(mean=0, std=1),
-#     a.Resize(height=config.IMG_SIZE, width=config.IMG_SIZE)
-# ])
-# transformed = transform(image=image.numpy())
-# image = transformed["image"]
-#
 
 with tf.device('/CPU:0'):
 
